@@ -265,8 +265,11 @@ const googleAuth = asyncHandler(async (req, res) => {
             user.emailVerificationOTP = undefined;
             user.emailVerificationExpires = undefined;
         }
-        if (picture && (!user.avatar || user.avatar.includes("default"))) {
+        if (picture) {
             user.avatar = picture;
+        } else if (!user.avatar || user.avatar.includes("default") || user.avatar.includes("gros0w3uearv5pqturij")) {
+            const userInitial = (user.username || user.fullname || name || "U").charAt(0).toUpperCase();
+            user.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userInitial)}&background=cc0000&color=ffffff&bold=true&size=256`;
         }
         await user.save({ validateBeforeSave: false });
     } else {
