@@ -78,7 +78,7 @@ export const Sidebar = () => {
 
       {/* Expanded Sidebar (Desktop & Mobile Drawer) */}
       <aside
-        className={`fixed top-14 left-0 bottom-0 z-30 w-60 bg-[#0f0f0f] border-r border-[#272727] overflow-y-auto custom-scrollbar p-3 flex flex-col gap-4 transition-transform duration-200 ease-in-out ${
+        className={`fixed top-14 left-0 bottom-0 z-30 w-60 bg-[#0f0f0f] border-r border-[#272727] overflow-y-auto sidebar-scrollbar p-3 flex flex-col gap-4 transition-transform duration-200 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'
         }`}
       >
@@ -202,13 +202,8 @@ export const Sidebar = () => {
         )}
 
         {/* Footer info */}
-        <div className="mt-auto px-3 py-4 text-xs text-[#717171] flex flex-col gap-2">
+        <div className="mt-auto px-3 py-4 text-xs text-[#717171]">
           <p>© 2026 NoAdTube • Ad-Free Video Streaming Platform</p>
-          <div className="flex flex-wrap gap-x-2 gap-y-1">
-            <span>About</span>
-            <span>Terms</span>
-            <span>Privacy</span>
-          </div>
         </div>
       </aside>
 

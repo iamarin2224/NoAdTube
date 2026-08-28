@@ -8,7 +8,7 @@
   }
 }
 
-/* Custom modern scrollbar */
+/* Global modern scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -25,6 +25,39 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #606060;
+}
+
+/* YouTube-style sidebar scrollbar: completely hidden until hovered or scrolled */
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.25s ease-in-out;
+}
+
+.sidebar-scrollbar:hover {
+  scrollbar-color: #4f4f4f transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 6px;
+  transition: background-color 0.25s ease-in-out;
+}
+
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #4f4f4f;
+}
+
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+  background: #717171;
 }
 
 /* Line clamps */
