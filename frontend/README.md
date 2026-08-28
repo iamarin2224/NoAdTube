@@ -82,6 +82,7 @@ frontend/
 │   ├── App.jsx             # Route definitions
 │   └── main.jsx            # Providers root (GoogleOAuth, QueryClient, Auth, UI, Queue)
 ├── .env                    # Frontend environment configuration
+├── vercel.json             # Vercel SPA route rewrite rules
 ├── vite.config.js
 └── package.json
 ```
@@ -106,7 +107,7 @@ VITE_GOOGLE_CLIENT_ID=776457487628-867sukk5uhkgb1bv2jahl6eb2edgqa8h.apps.googleu
 
 ---
 
-## 🚀 Running the Project
+## 🚀 Running & Deploying the Project
 
 ### 1. Start the Development Server
 ```bash
@@ -121,6 +122,20 @@ npm run dev
 npm run build
 # Generates production bundle in /frontend/dist
 ```
+
+### 3. Vercel Deployment & SPA Rewrites
+The project includes a `vercel.json` file configuring SPA route rewrites:
+```json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+This ensures direct URL navigation and page refreshes on parameterized subroutes (e.g. `/watch/:id`, `/channel/:username`, `/playlists`) route to `/index.html` and resolve dynamically via React Router.
 
 ---
 
