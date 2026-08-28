@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   ThumbsUp, 
@@ -36,6 +36,33 @@ export const VideoActions = ({
   const owner = video?.owner || {};
   const isOwner = user?._id === owner?._id;
 
+  // Fetch initial like count and like status
+  useEffect(() => {
+    if (videoId) {
+      likeApi
+        .getLikesCount('video', videoId)
+        .then((res) => {
+          if (res.success && typeof res.data === 'number') {
+            setLikesCount(res.data);
+          }
+        })
+        .catch(() => {});
+
+      if (isAuthenticated) {
+        likeApi
+          .getLikeStatus('video', videoId)
+          .then((res) => {
+            if (res.success && res.data) {
+              setIsLiked(!!res.data.isLiked);
+            }
+          })
+          .catch(() => {});
+      } else {
+        setIsLiked(false);
+      }
+    }
+  }, [videoId, isAuthenticated]);
+
   const handleToggleLike = async () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -47,13 +74,16 @@ export const VideoActions = ({
     const prevLiked = isLiked;
     const prevCount = likesCount;
     setIsLiked(!prevLiked);
-    setLikesCount(prevLiked ? prevCount - 1 : prevCount + 1);
+    setLikesCount(prevLiked ? Math.max(0, prevCount - 1) : prevCount + 1);
     setIsLiking(true);
 
     try {
       const res = await likeApi.toggleVideoLike(videoId);
       if (res.success && res.data) {
         setIsLiked(res.data.isLiked);
+        if (typeof res.data.count === 'number') {
+          setLikesCount(res.data.count);
+        }
       }
     } catch (err) {
       // Rollback
@@ -75,7 +105,7 @@ export const VideoActions = ({
     const prevSubscribed = isSubscribed;
     const prevCount = subscribersCount;
     setIsSubscribed(!prevSubscribed);
-    setSubscribersCount(prevSubscribed ? prevCount - 1 : prevCount + 1);
+    setSubscribersCount(prevSubscribed ? Math.max(0, prevCount - 1) : prevCount + 1);
     setIsSubscribing(true);
 
     try {
@@ -153,7 +183,7 @@ export const VideoActions = ({
         </div>
 
         {/* Actions: Like, Share, Save */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
           {/* Like */}
           <Button
             variant="secondary"

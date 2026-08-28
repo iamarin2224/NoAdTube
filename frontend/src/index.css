@@ -27,6 +27,18 @@
   background: #606060;
 }
 
+/* Utility to completely hide scrollbars across all browsers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
 /* YouTube-style sidebar scrollbar: completely hidden until hovered or scrolled */
 .sidebar-scrollbar {
   scrollbar-width: thin;

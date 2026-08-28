@@ -6,6 +6,21 @@ export const likeApi = {
     return response.data;
   },
 
+  toggleVideoLike: async (videoId) => {
+    const response = await api.post(`/likes/toggle/video/${videoId}`);
+    return response.data;
+  },
+
+  toggleTweetLike: async (tweetId) => {
+    const response = await api.post(`/likes/toggle/tweet/${tweetId}`);
+    return response.data;
+  },
+
+  toggleCommentLike: async (commentId) => {
+    const response = await api.post(`/likes/toggle/comment/${commentId}`);
+    return response.data;
+  },
+
   likeVideo: async (videoId) => {
     const response = await api.post(`/likes/video/${videoId}`);
     return response.data;
