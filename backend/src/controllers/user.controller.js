@@ -31,11 +31,14 @@ const generateAccessAndRefreshToken = async (userId) => {
     }
 };
 
-const getCookieOptions = () => ({
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax"
-});
+const getCookieOptions = () => {
+    const isProduction = process.env.NODE_ENV === "production";
+    return {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+    };
+};
 
 // Register user route with 6-digit OTP generation & email sending
 const registerUser = asyncHandler(async (req, res) => {

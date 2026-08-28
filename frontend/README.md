@@ -93,9 +93,16 @@ frontend/
 Create a `.env` file in the `/frontend` directory:
 
 ```env
+# Development
 VITE_API_BASE_URL=http://localhost:8000/api/v1
+
+# Production (Render Backend)
+# VITE_API_BASE_URL=https://<your-render-backend-url>/api/v1
+
 VITE_GOOGLE_CLIENT_ID=776457487628-867sukk5uhkgb1bv2jahl6eb2edgqa8h.apps.googleusercontent.com
 ```
+
+*Note: Axios is configured with `withCredentials: true` across all requests to support cross-domain authentication between Vercel and Render.*
 
 ---
 

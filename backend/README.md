@@ -41,8 +41,9 @@ Create a `.env` file in the `/backend` directory:
 
 ```env
 PORT=8000
+NODE_ENV=production
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net
-CORS_ORIGIN=http://localhost:5173
+CORS_ORIGIN=https://noadtube-iota.vercel.app
 
 ACCESS_TOKEN_SECRET=your_jwt_access_secret
 ACCESS_TOKEN_EXPIRY=1d
@@ -59,6 +60,14 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 GMAIL_USER=noadtube.online@gmail.com
 GMAIL_APP_PASS=your_16_char_app_password
 ```
+
+---
+
+## 🌐 Production Deployment & Security Configuration
+
+* **Cross-Origin Cookie Flags (`sameSite: "none"` & `secure: true`)**: In `NODE_ENV=production`, authentication cookies (`accessToken`, `refreshToken`) and cookie clearing (`res.clearCookie`) use `sameSite: "none"` and `secure: true` to enable cross-domain cookie transmission between Vercel and Render.
+* **Strict CORS & Preflight Handling**: Automatically cleans trailing slashes from `CORS_ORIGIN`, allowing seamless communication with `https://noadtube-iota.vercel.app` with `credentials: true`.
+* **Google OAuth COOP Policy**: Emits `Cross-Origin-Opener-Policy: same-origin-allow-popups` to avoid popup closure errors during Google OAuth authorization.
 
 ---
 

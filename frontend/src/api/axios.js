@@ -2,6 +2,9 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
+// Ensure global axios sends cross-site credentials
+axios.defaults.withCredentials = true;
+
 const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
@@ -35,15 +38,15 @@ api.interceptors.response.use(
 
     // Do not attempt token refresh for public / auth check endpoints
     const isAuthEndpoint =
-      originalRequest.url?.includes('/users/login') ||
-      originalRequest.url?.includes('/users/register') ||
-      originalRequest.url?.includes('/users/verify-otp') ||
-      originalRequest.url?.includes('/users/resend-otp') ||
-      originalRequest.url?.includes('/users/google-auth') ||
-      originalRequest.url?.includes('/users/refresh-token') ||
-      originalRequest.url?.includes('/users/user-details');
+      originalRequest?.url?.includes('/users/login') ||
+      originalRequest?.url?.includes('/users/register') ||
+      originalRequest?.url?.includes('/users/verify-otp') ||
+      originalRequest?.url?.includes('/users/resend-otp') ||
+      originalRequest?.url?.includes('/users/google-auth') ||
+      originalRequest?.url?.includes('/users/refresh-token') ||
+      originalRequest?.url?.includes('/users/user-details');
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

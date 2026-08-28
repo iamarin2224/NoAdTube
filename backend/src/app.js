@@ -4,10 +4,44 @@ import cookieParser from "cookie-parser";
 
 const app = express(); 
 
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-    credentials: true
-}))
+// Cross-Origin-Opener-Policy (COOP) header for Google OAuth popups
+app.use((req, res, next) => {
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+    next();
+});
+
+// Configure CORS with trailing slash trimming and credentials
+const rawOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+const allowedOrigins = rawOrigin
+    .split(",")
+    .map((o) => o.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+// Ensure Vercel deployment and localhost are always included
+const defaultAllowed = ["http://localhost:5173", "https://noadtube-iota.vercel.app"];
+defaultAllowed.forEach((orig) => {
+    if (!allowedOrigins.includes(orig)) {
+        allowedOrigins.push(orig);
+    }
+});
+
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            // Allow requests with no origin (e.g. mobile apps, curl, postman)
+            if (!origin) return callback(null, true);
+            const cleanOrigin = origin.trim().replace(/\/+$/, "");
+            if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes("*")) {
+                return callback(null, true);
+            }
+            return callback(null, true);
+        },
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With", "Accept"],
+        exposedHeaders: ["Set-Cookie"]
+    })
+);
 
 // Common middlewares
 app.use(express.json({ limit: "16kb" }));
