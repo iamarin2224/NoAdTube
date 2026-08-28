@@ -126,4 +126,10 @@ target/
 ## ignoring .DS_Store
 .DS_Store
 
+# Temporary Upload Files
+backend/public/temp/*
+!backend/public/temp/.gitkeep
+public/temp/*
+!public/temp/.gitkeep
+
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node,Java-Web

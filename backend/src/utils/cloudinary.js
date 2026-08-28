@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import { v2 as cloudinary } from 'cloudinary';
 import fs from "fs";
 
-dotenv.config()
+dotenv.config();
 
 cloudinary.config({ 
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
@@ -10,57 +10,71 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME);
-// console.log("API Key:", process.env.CLOUDINARY_API_KEY);
-// console.log("API Secret:", process.env.CLOUDINARY_API_SECRET);
-
 const uploadOnCloudinary = async (localFilePath) => {
     try {
-        if (!localFilePath) return null
+        if (!localFilePath) return null;
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto"
-        })
-        fs.unlinkSync(localFilePath) //deleting from server after it is uploaded to cloud
-        console.log(`File uploaded with url: ${response.url}`);
-        return response
-    } catch (error) {
-        console.log("Cloudinary file upload error: ", error);
-        if (fs.existsSync(localFilePath)){
-            fs.unlinkSync(localFilePath)
+        });
+        
+        // Safely clean up local temp file after upload
+        try {
+            if (fs.existsSync(localFilePath)) {
+                fs.unlinkSync(localFilePath);
+            }
+        } catch (e) {
+            console.warn("Failed to delete local temp file after upload:", e.message);
         }
-        return null
+
+        console.log(`File uploaded to Cloudinary: ${response.secure_url || response.url}`);
+        return response;
+    } catch (error) {
+        console.error("Cloudinary file upload error:", error);
+        // Safely clean up local temp file on error
+        try {
+            if (localFilePath && fs.existsSync(localFilePath)) {
+                fs.unlinkSync(localFilePath);
+            }
+        } catch (e) {
+            console.warn("Failed to delete local temp file on error:", e.message);
+        }
+        return null;
     }
-}
+};
 
-const  extractPublicId = (cloudinaryUrl) => {
-  const urlWithoutParams = cloudinaryUrl.split('?')[0];
-  const parts = urlWithoutParams.split('/');
-  const filename = parts[parts.length - 1];
-  const publicId = filename.replace(/\.[^/.]+$/, ''); //remove extensions
-  return publicId;
-}
-
+const extractPublicId = (cloudinaryUrl) => {
+    if (!cloudinaryUrl) return "";
+    const urlWithoutParams = cloudinaryUrl.split('?')[0];
+    const parts = urlWithoutParams.split('/');
+    const filename = parts[parts.length - 1];
+    const publicId = filename.replace(/\.[^/.]+$/, ''); // remove extension
+    return publicId;
+};
 
 const deleteFromCloudinary = async (publicId) => {
     try {
-        const result = cloudinary.uploader.destroy(publicId)
-        console.log("Deleted from cloudinary with Public ID: ", publicId);
+        if (!publicId) return null;
+        const result = await cloudinary.uploader.destroy(publicId);
+        console.log("Deleted from Cloudinary with Public ID:", publicId);
+        return result;
     } catch (error) {
-        console.log("Error deleting from cloudinary: ", error);
-        return null
+        console.error("Error deleting from Cloudinary:", error);
+        return null;
     }
-}
+};
 
 const deleteVideoFromCloudinary = async (publicId) => {
     try {
-        const result = cloudinary.uploader.destroy(publicId, {
+        if (!publicId) return null;
+        const result = await cloudinary.uploader.destroy(publicId, {
             resource_type: "video"
-        })
-        console.log("Deleted from cloudinary with Public ID: ", publicId);
+        });
+        console.log("Deleted video from Cloudinary with Public ID:", publicId);
+        return result;
     } catch (error) {
-        console.log("Error deleting from cloudinary: ", error);
-        return null
+        console.error("Error deleting video from Cloudinary:", error);
+        return null;
     }
-}
+};
 
-export {uploadOnCloudinary, deleteFromCloudinary, deleteVideoFromCloudinary, extractPublicId}
+export { uploadOnCloudinary, deleteFromCloudinary, deleteVideoFromCloudinary, extractPublicId };

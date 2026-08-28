@@ -68,6 +68,7 @@ GMAIL_APP_PASS=your_16_char_app_password
 * **Cross-Origin Cookie Flags (`sameSite: "none"` & `secure: true`)**: In `NODE_ENV=production`, authentication cookies (`accessToken`, `refreshToken`) and cookie clearing (`res.clearCookie`) use `sameSite: "none"` and `secure: true` to enable cross-domain cookie transmission between Vercel and Render.
 * **Strict CORS & Preflight Handling**: Automatically cleans trailing slashes from `CORS_ORIGIN`, allowing seamless communication with `https://noadtube-iota.vercel.app` with `credentials: true`.
 * **Google OAuth COOP Policy**: Emits `Cross-Origin-Opener-Policy: same-origin-allow-popups` to avoid popup closure errors during Google OAuth authorization.
+* **Multer Temp Directory & Safe Cleanup**: Automatically verifies and creates `./public/temp` on application startup to prevent upload directory errors in cloud environments (Render). Temp files are safely deleted via defensive try/catch blocks after Cloudinary processing.
 
 ---
 
