@@ -4,7 +4,6 @@ import {
   ListMusic, 
   Bookmark, 
   Share2, 
-  Download, 
   Check 
 } from 'lucide-react';
 import { useQueue } from '../../context/QueueContext';
@@ -71,15 +70,6 @@ export const VideoActionMenu = ({ video, className = '' }) => {
     }, 1500);
   };
 
-  const handleDownload = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsOpen(false);
-    if (video.videoFile) {
-      window.open(video.videoFile, '_blank');
-    }
-  };
-
   return (
     <div className={`relative ${className}`} ref={menuRef}>
       <button
@@ -128,17 +118,6 @@ export const VideoActionMenu = ({ video, className = '' }) => {
               </>
             )}
           </button>
-
-          {video.videoFile && (
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-[#f1f1f1] hover:bg-[#383838] transition-colors text-left"
-            >
-              <Download className="w-4 h-4 text-[#aaaaaa]" />
-              Download
-            </button>
-          )}
         </div>
       )}
 

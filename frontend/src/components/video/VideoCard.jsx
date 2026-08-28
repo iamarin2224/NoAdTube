@@ -28,14 +28,66 @@ export const VideoCard = ({ video, horizontal = false, hideChannel = false, isCo
     : '';
 
   if (horizontal) {
+    if (isCompact) {
+      return (
+        <div className="flex flex-row items-start gap-2.5 group cursor-pointer w-full relative">
+          {/* Compact 16:9 Thumbnail (Up Next sidebar) */}
+          <Link
+            to={`/watch/${encodedVideoId}`}
+            className="relative flex-shrink-0 self-start w-36 sm:w-40 aspect-video bg-[#1f1f1f] rounded-xl overflow-hidden shadow-sm"
+          >
+            <img
+              src={thumbnail}
+              alt={title}
+              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            />
+            {duration > 0 && (
+              <div className="absolute bottom-1 right-1 bg-black/85 text-white text-[10px] font-semibold px-1 py-0.5 rounded shadow">
+                {formatDuration(duration)}
+              </div>
+            )}
+          </Link>
+
+          {/* Details Column */}
+          <div className="flex flex-col min-w-0 flex-1 justify-start py-0.5">
+            <div className="flex justify-between items-start gap-1">
+              <Link to={`/watch/${encodedVideoId}`} className="flex-1 min-w-0">
+                <h3 className="font-semibold text-xs text-[#f1f1f1] group-hover:text-white line-clamp-2 leading-snug">
+                  {title}
+                </h3>
+              </Link>
+              <VideoActionMenu
+                video={video}
+                className="flex-shrink-0 -mt-1 -mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              />
+            </div>
+
+            {!hideChannel && owner?.username && (
+              <Link
+                to={`/channel/${owner.username}`}
+                className="text-[12px] text-[#aaaaaa] hover:text-[#f1f1f1] font-medium mt-1 truncate"
+              >
+                {owner.fullname || owner.username}
+              </Link>
+            )}
+
+            <div className="text-[11px] text-[#aaaaaa] flex items-center gap-1 mt-0.5">
+              <span>{formatViews(views)}</span>
+              <span>•</span>
+              <span>{formatRelativeTime(createdAt)}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Standard horizontal card (Search, History, Playlists, Liked)
     return (
       <div className="flex flex-col sm:flex-row items-start gap-4 group cursor-pointer w-full relative">
-        {/* Fixed Aspect Ratio Thumbnail (Never stretches vertically) */}
         <Link
           to={`/watch/${encodedVideoId}`}
-          className={`relative flex-shrink-0 self-start bg-[#1f1f1f] rounded-2xl overflow-hidden shadow-sm aspect-video ${
-            isCompact ? 'w-40 sm:w-40' : 'w-full sm:w-64 md:w-72'
-          }`}
+          className="relative flex-shrink-0 self-start bg-[#1f1f1f] rounded-2xl overflow-hidden shadow-sm aspect-video w-full sm:w-64 md:w-72"
         >
           <img
             src={thumbnail}
@@ -50,13 +102,10 @@ export const VideoCard = ({ video, horizontal = false, hideChannel = false, isCo
           )}
         </Link>
 
-        {/* Details Column */}
         <div className="flex flex-col min-w-0 flex-1 justify-start py-0.5 w-full">
           <div className="flex justify-between items-start gap-2">
             <Link to={`/watch/${encodedVideoId}`} className="flex-1 min-w-0">
-              <h3 className={`font-semibold text-[#f1f1f1] group-hover:text-white line-clamp-2 leading-snug ${
-                isCompact ? 'text-xs' : 'text-sm sm:text-base'
-              }`}>
+              <h3 className="font-semibold text-sm sm:text-base text-[#f1f1f1] group-hover:text-white line-clamp-2 leading-snug">
                 {title}
               </h3>
             </Link>
@@ -89,7 +138,7 @@ export const VideoCard = ({ video, horizontal = false, hideChannel = false, isCo
             </Link>
           )}
 
-          {!isCompact && previewDescription && (
+          {previewDescription && (
             <p className="text-xs text-[#888888] line-clamp-2 leading-relaxed mt-2 hidden sm:block">
               {previewDescription}
             </p>
