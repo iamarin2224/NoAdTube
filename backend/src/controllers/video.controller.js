@@ -37,8 +37,8 @@ const uploadVideo = asyncHandler(async (req, res) => {
 
     const videoFilePath = req.files?.videoFile?.[0]?.path;
     const thumbnailFilePath = req.files?.thumbnail?.[0]?.path;
-    if (!(videoFilePath && thumbnailFilePath)) {
-        throw new ApiError(400, "Video file and thumbnail are required");
+    if (!videoFilePath) {
+        throw new ApiError(400, "Video file is required");
     }
 
     const userID = req.user?._id;
@@ -104,11 +104,20 @@ const uploadVideo = asyncHandler(async (req, res) => {
     }
 
     let thumbnail;
-    try {
-        thumbnail = await uploadOnCloudinary(thumbnailFilePath);
-    } catch (error) {
-        console.log("Error in uploading thumbnail", error);
-        throw new ApiError(500, "Failed to upload thumbnail");
+    if (thumbnailFilePath) {
+        try {
+            thumbnail = await uploadOnCloudinary(thumbnailFilePath);
+        } catch (error) {
+            console.log("Error in uploading thumbnail", error);
+            throw new ApiError(500, "Failed to upload thumbnail");
+        }
+    } else {
+        // Automatically generate 1st-second poster thumbnail from video in Cloudinary
+        const autoThumbnailUrl = videoFile.secure_url.replace(/\.[^/.]+$/, ".jpg");
+        thumbnail = {
+            secure_url: autoThumbnailUrl,
+            public_id: null
+        };
     }
 
     let video;

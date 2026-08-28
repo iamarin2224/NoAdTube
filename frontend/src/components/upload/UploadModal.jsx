@@ -13,11 +13,68 @@ import {
   CheckCircle, 
   AlertCircle, 
   Tag,
-  HardDrive
+  HardDrive,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 
 const PRESET_TAGS = ['Coding', 'Music', 'Gaming', 'Tech', 'Podcasts', 'Tutorials', 'Entertainment', 'News'];
 const MAX_STORAGE_BYTES = 1024 * 1024 * 1024; // 1 GB
+
+// Extract 1st-second frame from video using in-memory HTML5 video + canvas
+const extractFirstSecondThumbnail = (file) => {
+  return new Promise((resolve) => {
+    try {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      const objectUrl = URL.createObjectURL(file);
+      video.src = objectUrl;
+
+      const handleLoadedMetadata = () => {
+        // Target 1.0s or mid-point if video is shorter than 1 second
+        const targetTime = Math.min(1.0, video.duration > 0 ? video.duration / 2 : 0.5);
+        video.currentTime = targetTime;
+      };
+
+      const handleSeeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 1280;
+          canvas.height = video.videoHeight || 720;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(objectUrl);
+            if (blob) {
+              const autoThumbnailFile = new File([blob], 'thumbnail_auto.jpg', { type: 'image/jpeg' });
+              const previewUrl = URL.createObjectURL(blob);
+              resolve({ file: autoThumbnailFile, preview: previewUrl });
+            } else {
+              resolve(null);
+            }
+          }, 'image/jpeg', 0.85);
+        } catch (err) {
+          URL.revokeObjectURL(objectUrl);
+          resolve(null);
+        }
+      };
+
+      const handleError = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+      };
+
+      video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+      video.addEventListener('seeked', handleSeeked, { once: true });
+      video.addEventListener('error', handleError, { once: true });
+    } catch (e) {
+      resolve(null);
+    }
+  });
+};
 
 export const UploadModal = () => {
   const { isUploadModalOpen, closeUploadModal } = useUI();
@@ -25,6 +82,10 @@ export const UploadModal = () => {
   const [videoFile, setVideoFile] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState('');
+  const [isAutoThumbnail, setIsAutoThumbnail] = useState(false);
+  const [isCustomThumbnail, setIsCustomThumbnail] = useState(false);
+  const [isExtractingThumbnail, setIsExtractingThumbnail] = useState(false);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState([]);
@@ -58,6 +119,9 @@ export const UploadModal = () => {
     setVideoFile(null);
     setThumbnailFile(null);
     setThumbnailPreview('');
+    setIsAutoThumbnail(false);
+    setIsCustomThumbnail(false);
+    setIsExtractingThumbnail(false);
     setTitle('');
     setDescription('');
     setTags([]);
@@ -110,6 +174,19 @@ export const UploadModal = () => {
         const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
         setTitle(cleanName);
       }
+
+      // Auto-extract 1st second clip as thumbnail if no custom thumbnail has been selected
+      if (!isCustomThumbnail) {
+        setIsExtractingThumbnail(true);
+        extractFirstSecondThumbnail(file).then((result) => {
+          setIsExtractingThumbnail(false);
+          if (result) {
+            setThumbnailFile(result.file);
+            setThumbnailPreview(result.preview);
+            setIsAutoThumbnail(true);
+          }
+        });
+      }
     }
   };
 
@@ -122,6 +199,8 @@ export const UploadModal = () => {
       }
       setThumbnailFile(file);
       setThumbnailPreview(URL.createObjectURL(file));
+      setIsAutoThumbnail(false);
+      setIsCustomThumbnail(true);
       setError('');
     }
   };
@@ -154,10 +233,6 @@ export const UploadModal = () => {
       setError('Please select a video file to upload.');
       return;
     }
-    if (!thumbnailFile) {
-      setError('Please select a thumbnail image for your video.');
-      return;
-    }
     if (!title.trim()) {
       setError('Title is required.');
       return;
@@ -178,9 +253,20 @@ export const UploadModal = () => {
     setIsUploading(true);
     setUploadProgress(0);
 
+    let finalThumbnailFile = thumbnailFile;
+    // If thumbnailFile is still missing, attempt one quick extraction from video
+    if (!finalThumbnailFile) {
+      const extracted = await extractFirstSecondThumbnail(videoFile);
+      if (extracted) {
+        finalThumbnailFile = extracted.file;
+      }
+    }
+
     const formData = new FormData();
     formData.append('videoFile', videoFile);
-    formData.append('thumbnail', thumbnailFile);
+    if (finalThumbnailFile) {
+      formData.append('thumbnail', finalThumbnailFile);
+    }
     formData.append('title', title.trim());
     formData.append('description', description.trim());
     if (tags.length > 0) {
@@ -219,59 +305,81 @@ export const UploadModal = () => {
           </div>
           <h3 className="text-xl font-bold text-white">Video Published Successfully!</h3>
           <p className="text-sm text-[#aaaaaa] max-w-md">
-            "{successVideo.title}" is now uploaded and available for everyone on NoAdTube.
+            Your video is now live on NoAdTube and can be viewed across the platform.
           </p>
 
+          <div className="w-full bg-[#1e1e1e] p-4 rounded-xl flex items-center gap-4 text-left mt-2">
+            <img
+              src={successVideo.thumbnail}
+              alt={successVideo.title}
+              className="w-28 aspect-video object-cover rounded-lg bg-[#272727]"
+            />
+            <div className="flex flex-col min-w-0 flex-1">
+              <h4 className="text-sm font-bold text-white truncate">
+                {successVideo.title}
+              </h4>
+              <p className="text-xs text-[#aaaaaa] line-clamp-1 mt-0.5">
+                {successVideo.description}
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <a
+                  href={`/watch/${encodeId(successVideo._id)}`}
+                  className="text-xs font-semibold text-red-500 hover:text-red-400"
+                >
+                  Watch Video →
+                </a>
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-3 mt-4">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                resetForm();
-              }}
-            >
-              Upload Another Video
+            <Button variant="secondary" onClick={resetForm}>
+              Upload Another
             </Button>
             <Button
-              variant="youtube"
+              variant="primary"
               onClick={() => {
-                const encoded = encodeId(successVideo._id);
-                handleClose();
-                window.location.href = `/watch/${encoded}`;
+                resetForm();
+                closeUploadModal();
               }}
             >
-              Watch Video
+              Done
             </Button>
           </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* Storage Quota Bar */}
+          {/* Storage Quota Header */}
           {storageUsage && (
-            <div className="p-3 bg-[#141414] border border-[#272727] rounded-2xl flex flex-col gap-2">
+            <div className="p-3 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 font-semibold text-white">
-                  <HardDrive className="w-3.5 h-3.5 text-red-500" />
-                  Account Storage: {storageUsage.usedMB} MB {storageUsage.isUnlimited ? '(Unlimited Quota)' : `/ ${storageUsage.maxMB} MB (1 GB)`}
-                </span>
-                {storageUsage.isUnlimited ? (
-                  <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded uppercase">
-                    Unlimited
+                <div className="flex items-center gap-1.5 font-semibold text-white">
+                  <HardDrive className="w-4 h-4 text-red-500" />
+                  <span>Account Video Storage</span>
+                  {storageUsage.isUnlimited && (
+                    <span className="px-2 py-0.5 bg-red-600/20 text-red-400 border border-red-500/30 rounded-md text-[10px] uppercase font-bold">
+                      Unlimited Quota
+                    </span>
+                  )}
+                </div>
+                {!storageUsage.isUnlimited && (
+                  <span className="text-[#aaaaaa]">
+                    <strong className="text-white">{storageUsage.usedMB} MB</strong> / {storageUsage.limitMB} MB ({storageUsage.percentage}%)
                   </span>
-                ) : (
-                  <span className="text-[#aaaaaa] font-mono">{storageUsage.percentage}% used</span>
                 )}
               </div>
+
               {!storageUsage.isUnlimited && (
-                <div className="w-full bg-[#272727] rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-[#2a2a2a] rounded-full h-1.5 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
-                      parseFloat(storageUsage.percentage) > 90
+                      storageUsage.percentage > 90
                         ? 'bg-red-500'
-                        : parseFloat(storageUsage.percentage) > 70
+                        : storageUsage.percentage > 70
                         ? 'bg-amber-500'
-                        : 'bg-emerald-500'
+                        : 'bg-red-600'
                     }`}
-                    style={{ width: `${storageUsage.percentage}%` }}
+                    style={{ width: `${Math.min(100, storageUsage.percentage)}%` }}
                   />
                 </div>
               )}
@@ -279,18 +387,18 @@ export const UploadModal = () => {
           )}
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 text-red-400 text-sm">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Files drop/picker zones */}
+          {/* Media Pickers */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Video File Picker */}
             <div
               onClick={() => !isUploading && videoInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition-colors ${
+              className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition-colors ${
                 videoFile
                   ? 'border-emerald-500/50 bg-emerald-500/5'
                   : 'border-[#3f3f3f] hover:border-red-500 bg-[#121212]'
@@ -334,15 +442,28 @@ export const UploadModal = () => {
                 onChange={handleThumbnailSelect}
                 className="hidden"
               />
-              {thumbnailPreview ? (
-                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+              {isExtractingThumbnail ? (
+                <div className="flex flex-col items-center justify-center py-4 gap-2 text-white">
+                  <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+                  <span className="text-xs text-[#aaaaaa]">Capturing 1st-second frame...</span>
+                </div>
+              ) : thumbnailPreview ? (
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden group">
                   <img
                     src={thumbnailPreview}
                     alt="Thumbnail preview"
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <span className="text-xs text-white font-semibold">Change Image</span>
+                  {isAutoThumbnail && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/80 backdrop-blur-xs text-amber-300 border border-amber-500/40 rounded-md text-[10px] font-semibold flex items-center gap-1 shadow">
+                      <Sparkles className="w-3 h-3" />
+                      Auto 1s Frame
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-xs text-white font-semibold bg-black/75 px-3 py-1.5 rounded-full shadow">
+                      Change Custom Thumbnail
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -351,10 +472,10 @@ export const UploadModal = () => {
                     <Image className="w-6 h-6" />
                   </div>
                   <span className="text-sm font-semibold text-[#f1f1f1]">
-                    Select Thumbnail
+                    Custom Thumbnail (Optional)
                   </span>
                   <span className="text-xs text-[#aaaaaa]">
-                    JPG, PNG, WebP (16:9 ratio)
+                    1st second clip will auto-capture if omitted
                   </span>
                 </>
               )}
@@ -484,7 +605,7 @@ export const UploadModal = () => {
               type="submit"
               variant="youtube"
               isLoading={isUploading}
-              disabled={!videoFile || !thumbnailFile || !title.trim() || !description.trim()}
+              disabled={!videoFile || !title.trim() || !description.trim()}
               icon={Upload}
             >
               {isUploading ? `Uploading (${uploadProgress}%)` : 'Publish Video'}
