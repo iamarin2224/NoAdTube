@@ -31,7 +31,27 @@ const generateAccessAndRefreshToken = async (userId) => {
     }
 };
 
-const getCookieOptions = () => {
+const getAccessCookieOptions = () => {
+    const isProduction = process.env.NODE_ENV === "production";
+    return {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: 1 * 24 * 60 * 60 * 1000, // 1 day
+    };
+};
+
+const getRefreshCookieOptions = () => {
+    const isProduction = process.env.NODE_ENV === "production";
+    return {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
+    };
+};
+
+const getClearCookieOptions = () => {
     const isProduction = process.env.NODE_ENV === "production";
     return {
         httpOnly: true,
@@ -172,12 +192,10 @@ const verifyEmailOTP = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken -emailVerificationOTP -emailVerificationExpires");
 
-    const options = getCookieOptions();
-
     return res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie("accessToken", accessToken, getAccessCookieOptions())
+        .cookie("refreshToken", refreshToken, getRefreshCookieOptions())
         .json(
             new ApiResponse(
                 200,
@@ -302,12 +320,10 @@ const googleAuth = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken -emailVerificationOTP -emailVerificationExpires");
 
-    const options = getCookieOptions();
-
     return res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie("accessToken", accessToken, getAccessCookieOptions())
+        .cookie("refreshToken", refreshToken, getRefreshCookieOptions())
         .json(
             new ApiResponse(
                 200,
@@ -363,12 +379,10 @@ const loginUser = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken -emailVerificationOTP -emailVerificationExpires");
 
-    const options = getCookieOptions();
-
     return res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie("accessToken", accessToken, getAccessCookieOptions())
+        .cookie("refreshToken", refreshToken, getRefreshCookieOptions())
         .json(
             new ApiResponse(
                 200,
@@ -391,12 +405,12 @@ const logoutUser = asyncHandler(async (req, res) => {
         );
     }
 
-    const options = getCookieOptions();
+    const clearOptions = getClearCookieOptions();
 
     return res
         .status(200)
-        .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
+        .clearCookie("accessToken", clearOptions)
+        .clearCookie("refreshToken", clearOptions)
         .json(new ApiResponse(200, {}, "Successfully logged out the user"));
 });
 
@@ -417,13 +431,12 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Invalid or expired refresh token");
         }
 
-        const options = getCookieOptions();
         const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
 
         return res
             .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newRefreshToken, options)
+            .cookie("accessToken", accessToken, getAccessCookieOptions())
+            .cookie("refreshToken", newRefreshToken, getRefreshCookieOptions())
             .json(new ApiResponse(200, { accessToken, newRefreshToken }, "Access token refreshed successfully"));
     } catch (error) {
         throw new ApiError(401, "Invalid refresh token");

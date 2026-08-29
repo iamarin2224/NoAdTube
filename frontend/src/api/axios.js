@@ -36,15 +36,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Do not attempt token refresh for public / auth check endpoints
+    // Do not attempt token refresh for public auth endpoints or the refresh endpoint itself
     const isAuthEndpoint =
       originalRequest?.url?.includes('/users/login') ||
       originalRequest?.url?.includes('/users/register') ||
       originalRequest?.url?.includes('/users/verify-otp') ||
       originalRequest?.url?.includes('/users/resend-otp') ||
       originalRequest?.url?.includes('/users/google-auth') ||
-      originalRequest?.url?.includes('/users/refresh-token') ||
-      originalRequest?.url?.includes('/users/user-details');
+      originalRequest?.url?.includes('/users/refresh-token');
 
     if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
       if (isRefreshing) {
